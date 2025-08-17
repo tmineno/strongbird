@@ -123,15 +123,38 @@ class CLIOrchestrator:
                         msg += str(self.output_config.screenshot_path)
                         console.print(msg)
 
+                # Determine img folder if image extraction is enabled
+                img_folder = None
+                if self.extraction_config.extract_images:
+                    if self.output_config.output_path:
+                        output_path = Path(self.output_config.output_path)
+                        img_folder = output_path.parent / "img"
+                    else:
+                        # Default to current directory if no output specified
+                        img_folder = Path("img")
+
                 # Extract from URL
                 result = await self.extraction_service.extract_from_url(
                     source,
                     self.playwright_config,
                     use_playwright=self.browser_config.javascript,
+                    img_folder=img_folder,
                 )
             else:
+                # Determine img folder if image extraction is enabled
+                img_folder = None
+                if self.extraction_config.extract_images:
+                    if self.output_config.output_path:
+                        output_path = Path(self.output_config.output_path)
+                        img_folder = output_path.parent / "img"
+                    else:
+                        # Use directory of the source file
+                        img_folder = file_path.parent / "img"
+
                 # Extract from file
-                result = await self.extraction_service.extract_from_file(str(file_path))
+                result = await self.extraction_service.extract_from_file(
+                    str(file_path), img_folder=img_folder
+                )
 
             return result
 
@@ -150,8 +173,25 @@ class CLIOrchestrator:
             List of extraction results
         """
         try:
+            # Determine img folder for crawling
+            img_folder = None
+            if self.extraction_config.extract_images:
+                # For crawling, use output directory if specified, or current directory
+                if self.output_config.output_path:
+                    output_path = Path(self.output_config.output_path)
+                    # If output_path is a directory, use it directly
+                    if output_path.is_dir() or self.output_config.output_path.endswith(
+                        "/"
+                    ):
+                        img_folder = output_path / "img"
+                    else:
+                        # If it's a file, use parent directory
+                        img_folder = output_path.parent / "img"
+                else:
+                    img_folder = Path("img")
+
             results = await self.crawl_service.crawl_pages(
-                seed_url, self.playwright_config
+                seed_url, self.playwright_config, img_folder=img_folder
             )
             return results
         except Exception as e:

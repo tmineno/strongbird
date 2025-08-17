@@ -154,7 +154,11 @@ class ExtractionService:
         return result
 
     async def extract_from_url(
-        self, url: str, playwright_config: PlaywrightConfig, use_playwright: bool = True
+        self,
+        url: str,
+        playwright_config: PlaywrightConfig,
+        use_playwright: bool = True,
+        img_folder: Optional[Path] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Extract content from URL.
@@ -163,58 +167,74 @@ class ExtractionService:
             url: URL to extract from
             playwright_config: Playwright interaction configuration
             use_playwright: Whether to use Playwright for rendering
+            img_folder: Folder to save images (if extract_images is enabled)
 
         Returns:
             Extraction result or None
         """
-        # Get HTML content
-        if use_playwright:
-            html_content = await self.browser_manager.fetch_html(
-                url=url,
-                wait_for_selector=playwright_config.wait_for_selector,
-                scroll_to_bottom=playwright_config.scroll_to_bottom,
-                wait_time=playwright_config.wait_time,
-                execute_script=playwright_config.execute_script,
-                process_math=self.extraction_config.process_math,
-            )
-        else:
+        # Check if non-playwright mode has content
+        if not use_playwright:
             downloaded = trafilatura.fetch_url(url)
             if not downloaded:
                 return None
-            html_content = downloaded
 
-        # Extract content
-        extracted = self._extract_with_trafilatura(html_content, url)
-        if not extracted:
-            return None
+        # Set browser manager to not use playwright if we fetched with trafilatura
+        self.extractor.use_playwright = use_playwright
 
-        return self._build_result(extracted, url, html_content, is_url=True)
+        # Use the main extractor for consistency and image support
+        result = await self.extractor.extract_async(
+            url=url,
+            output_format=self.extraction_config.output_format,
+            include_comments=self.extraction_config.include_comments,
+            include_tables=self.extraction_config.include_tables,
+            include_links=self.extraction_config.include_links,
+            include_images=self.extraction_config.include_images,
+            include_formatting=self.extraction_config.include_formatting,
+            process_math=self.extraction_config.process_math,
+            deduplicate=self.extraction_config.deduplicate,
+            target_lang=self.extraction_config.target_lang,
+            with_metadata=self.extraction_config.with_metadata,
+            wait_for_selector=playwright_config.wait_for_selector,
+            scroll_to_bottom=playwright_config.scroll_to_bottom,
+            wait_time=playwright_config.wait_time,
+            execute_script=playwright_config.execute_script,
+            extract_images=self.extraction_config.extract_images,
+            img_folder=img_folder,
+        )
 
-    async def extract_from_file(self, file_path: str) -> Optional[Dict[str, Any]]:
+        return result
+
+    async def extract_from_file(
+        self, file_path: str, img_folder: Optional[Path] = None
+    ) -> Optional[Dict[str, Any]]:
         """
         Extract content from local HTML file.
 
         Args:
             file_path: Path to HTML file
+            img_folder: Folder to save images (if extract_images is enabled)
 
         Returns:
             Extraction result or None
         """
-        path = Path(file_path)
-        if not path.exists():
-            raise FileNotFoundError(f"File not found: {file_path}")
-
-        with open(path, "r", encoding="utf-8") as f:
-            html_content = f.read()
-
-        # Extract content
-        extracted = self._extract_with_trafilatura(html_content)
-        if not extracted:
-            return None
-
-        return self._build_result(
-            extracted, str(path.absolute()), html_content, is_url=False
+        # Use the main extractor for consistency and image support
+        result = await self.extractor.extract_from_file_async(
+            file_path=file_path,
+            output_format=self.extraction_config.output_format,
+            include_comments=self.extraction_config.include_comments,
+            include_tables=self.extraction_config.include_tables,
+            include_links=self.extraction_config.include_links,
+            include_images=self.extraction_config.include_images,
+            include_formatting=self.extraction_config.include_formatting,
+            process_math=self.extraction_config.process_math,
+            deduplicate=self.extraction_config.deduplicate,
+            target_lang=self.extraction_config.target_lang,
+            with_metadata=self.extraction_config.with_metadata,
+            extract_images=self.extraction_config.extract_images,
+            img_folder=img_folder,
         )
+
+        return result
 
     async def take_screenshot(
         self, url: str, path: str, wait_for_selector: Optional[str] = None
@@ -264,7 +284,10 @@ class CrawlService:
         )
 
     async def crawl_pages(
-        self, seed_url: str, playwright_config: PlaywrightConfig
+        self,
+        seed_url: str,
+        playwright_config: PlaywrightConfig,
+        img_folder: Optional[Path] = None,
     ) -> List[Dict[str, Any]]:
         """
         Crawl multiple pages starting from seed URL.
@@ -283,6 +306,7 @@ class CrawlService:
             "include_tables": self.extraction_config.include_tables,
             "include_links": self.extraction_config.include_links,
             "include_images": self.extraction_config.include_images,
+            "extract_images": self.extraction_config.extract_images,
             "include_formatting": self.extraction_config.include_formatting,
             "process_math": self.extraction_config.process_math,
             "deduplicate": self.extraction_config.deduplicate,
@@ -292,6 +316,7 @@ class CrawlService:
             "scroll_to_bottom": playwright_config.scroll_to_bottom,
             "wait_time": playwright_config.wait_time,
             "execute_script": playwright_config.execute_script,
+            "img_folder": img_folder,
         }
 
         return await self.crawler.crawl_async(seed_url, **extract_kwargs)

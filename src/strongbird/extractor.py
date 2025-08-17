@@ -49,6 +49,8 @@ class StrongbirdExtractor:
         scroll_to_bottom: bool = False,
         wait_time: int = 0,
         execute_script: Optional[str] = None,
+        extract_images: bool = False,
+        img_folder: Optional[Path] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Extract content from URL asynchronously.
@@ -69,6 +71,8 @@ class StrongbirdExtractor:
             scroll_to_bottom: Scroll to bottom of page (Playwright)
             wait_time: Additional wait time in ms (Playwright)
             execute_script: JavaScript to execute (Playwright)
+            extract_images: Download images and update URLs in content
+            img_folder: Folder to save images (required if extract_images=True)
 
         Returns:
             Dictionary containing extracted content and metadata
@@ -127,6 +131,20 @@ class StrongbirdExtractor:
             "url": url,
         }
 
+        # Extract and download images if requested
+        if extract_images and img_folder and output_format == "markdown":
+            from .image_extractor import ImageExtractor
+
+            async with ImageExtractor() as img_extractor:
+                images, url_mapping = await img_extractor.extract_and_download_images(
+                    html_content, url, img_folder
+                )
+
+                if url_mapping:
+                    # Store image mappings for formatter
+                    result["image_mappings"] = url_mapping
+                    result["extracted_images"] = images
+
         # Extract metadata separately if needed
         if with_metadata and output_format in ["markdown", "text"]:
             metadata = trafilatura.metadata.extract_metadata(html_content)
@@ -174,6 +192,8 @@ class StrongbirdExtractor:
         deduplicate: bool = True,
         target_lang: Optional[str] = None,
         with_metadata: bool = True,
+        extract_images: bool = False,
+        img_folder: Optional[Path] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Extract content from local HTML file.
@@ -190,6 +210,8 @@ class StrongbirdExtractor:
             deduplicate: Remove duplicates
             target_lang: Target language
             with_metadata: Include metadata
+            extract_images: Download images and update URLs in content
+            img_folder: Folder to save images (required if extract_images=True)
 
         Returns:
             Dictionary containing extracted content and metadata
@@ -236,6 +258,23 @@ class StrongbirdExtractor:
             "format": output_format,
             "file": str(path.absolute()),
         }
+
+        # Extract and download images if requested (use file:// URL for local files)
+        if extract_images and img_folder and output_format == "markdown":
+            from .image_extractor import ImageExtractor
+
+            # Create file:// URL for base URL resolution
+            base_url = path.as_uri()
+
+            async with ImageExtractor() as img_extractor:
+                images, url_mapping = await img_extractor.extract_and_download_images(
+                    html_content, base_url, img_folder
+                )
+
+                if url_mapping:
+                    # Store image mappings for formatter
+                    result["image_mappings"] = url_mapping
+                    result["extracted_images"] = images
 
         # Extract metadata if needed
         if with_metadata and output_format in ["markdown", "text"]:
