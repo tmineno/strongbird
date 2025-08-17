@@ -12,6 +12,7 @@ A powerful web page extractor that combines Playwright for JavaScript rendering 
 - **Performance Optimizations**: Disable images/JavaScript for faster extraction
 - **Metadata Extraction**: Automatic extraction of title, author, date, and more
 - **Screenshot Capture**: Take screenshots while extracting content
+- **Image Extraction**: Download images from web pages and update links to local files
 - **URL Expansion**: Support for curl-style URL globbing patterns for bulk extraction
 - **Parallel Processing**: Process multiple URLs concurrently for improved performance
 
@@ -149,6 +150,25 @@ uv run strongbird https://example.com --include-formatting
 
 # Process mathematical equations (convert KaTeX/MathJax/MathML to TeX)
 uv run strongbird https://en.wikipedia.org/wiki/Quadratic_formula --process-math
+
+# Extract and download images to local img folder
+uv run strongbird https://example.com --extract-images -o article.md
+```
+
+### Image Extraction
+
+```bash
+# Download images and update URLs in content
+uv run strongbird https://example.com --extract-images -o article.md
+
+# Extract from academic papers with images
+uv run strongbird https://arxiv.org/html/1706.03762v7 --extract-images --process-math -o paper.md
+
+# Bulk extraction with images
+uv run strongbird "https://example.com/page-[1-5].html" --extract-images --output-dir ./pages
+
+# Crawling with image extraction
+uv run strongbird https://example.com --crawl-depth 1 --extract-images --output-dir ./crawl_results
 ```
 
 ## Options
@@ -191,6 +211,7 @@ uv run strongbird https://en.wikipedia.org/wiki/Quadratic_formula --process-math
 - `--include-comments`: Include comments in extraction
 - `--include-links`: Include links in extraction
 - `--include-images`: Include images in extraction
+- `--extract-images`: Download images to local img folder and update URLs in content
 - `--include-formatting`: Include text formatting (bold, italic, etc.)
 - `--process-math`: Process mathematical equations to TeX format ($$...$$ and $...$)
 - `--no-tables`: Exclude tables from extraction
@@ -249,6 +270,19 @@ uv run strongbird https://example.com \
   -o content.md
 ```
 
+### Extract with images
+
+```bash
+# Download images and save locally
+uv run strongbird https://arxiv.org/html/1706.03762v7 \
+  --extract-images \
+  --process-math \
+  -o paper.md
+
+# Images will be saved to img/ folder next to paper.md
+# Markdown content will reference local images like: ![alt](img/image_abc123.png)
+```
+
 ### Bulk extraction with URL expansion
 
 ```bash
@@ -282,9 +316,10 @@ The workflow:
 2. **Parallel Processing**: Multiple URLs are processed concurrently using page pools (if `-j > 1`)
 3. **Playwright Rendering**: Each page is rendered in a browser instance (if enabled)
 4. **Mathematical Processing**: Equations are converted to TeX format (if `--process-math` is enabled)
-5. **Content Extraction**: HTML is passed to Trafilatura for intelligent content extraction
-6. **Output Generation**: Content is formatted and saved according to specified options
-7. **Metadata Preservation**: Metadata is extracted and included (if requested)
+5. **Image Extraction**: Images are downloaded and saved locally (if `--extract-images` is enabled)
+6. **Content Extraction**: HTML is passed to Trafilatura for intelligent content extraction
+7. **Output Generation**: Content is formatted and saved according to specified options
+8. **Metadata Preservation**: Metadata is extracted and included (if requested)
 
 ## Mathematical Equation Processing
 
@@ -326,6 +361,61 @@ Mathematical equations are converted to standard TeX notation:
 - Display math: `$$equation$$`
 
 This ensures compatibility with Markdown processors, LaTeX, and other document systems that support TeX math notation.
+
+## Image Extraction
+
+Strongbird can automatically download images from web pages and save them to a local `img/` folder while updating the Markdown content to reference the local files.
+
+### How It Works
+
+1. **Image Discovery**: Scans HTML for `<img>` tags and extracts their `src` attributes
+2. **URL Resolution**: Converts relative URLs to absolute URLs using the page's base URL
+3. **Concurrent Downloads**: Downloads images asynchronously with configurable concurrency
+4. **Local Storage**: Saves images with unique filenames to prevent conflicts
+5. **Content Updates**: Replaces image URLs in Markdown output with local paths
+
+### Folder Structure
+
+- **Single file output**: `img/` folder created next to the output file
+- **Directory output**: `img/` folder created inside the output directory
+- **Crawling mode**: Shared `img/` folder for all pages
+
+### Image Extraction Examples
+
+```bash
+# Basic image extraction
+uv run strongbird https://example.com --extract-images -o article.md
+# Creates: article.md and img/ folder with downloaded images
+
+# Academic papers with figures
+uv run strongbird https://arxiv.org/html/1706.03762v7 --extract-images --process-math -o paper.md
+
+# Bulk extraction with images
+uv run strongbird "https://example.com/page-[1-5].html" --extract-images --output-dir ./pages
+# Creates: pages/img/ folder shared by all extracted pages
+
+# Crawling with images
+uv run strongbird https://example.com --crawl-depth 2 --extract-images --output-dir ./site
+```
+
+### Image Processing Features
+
+- **Smart URL Resolution**: Handles relative paths correctly (fixes issues with sites like arXiv)
+- **Unique Filenames**: Uses URL hash to generate conflict-free filenames
+- **Error Handling**: Gracefully handles failed downloads without stopping extraction
+- **Format Support**: Downloads all image formats (PNG, JPG, SVG, WebP, etc.)
+- **Parallel Downloads**: Configurable concurrency for faster processing
+- **Automatic Activation**: `--extract-images` automatically enables `--include-images`
+
+### Output Format
+
+Images in Markdown are referenced with relative paths:
+
+```markdown
+![Image description](img/filename_abc12345.jpg)
+```
+
+This ensures the Markdown files are portable and work when moved with their `img/` folders.
 
 ## URL Expansion with Curl Globbing
 
@@ -428,3 +518,5 @@ uv run strongbird "file://$(pwd)/test/fixtures/comprehensive-math-test.html" --p
 - [Trafilatura](https://trafilatura.readthedocs.io/): Content extraction
 - [Click](https://click.palletsprojects.com/): CLI framework
 - [Rich](https://github.com/Textualize/rich): Terminal formatting
+- [aiohttp](https://docs.aiohttp.org/): Async HTTP client for image downloads
+- [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/): HTML parsing for image extraction
