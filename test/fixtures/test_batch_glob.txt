@@ -1,0 +1,11 @@
+# Batch file with glob patterns for testing
+# Contains URLs with globbing patterns that should expand
+
+# Numeric range expansion
+https://httpbin.org/status/[200-202]
+
+# List expansion
+https://httpbin.org/{get,post}
+
+# Mixed patterns
+https://httpbin.org/anything/[a-c]

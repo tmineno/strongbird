@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Union
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
+from .batch_reader import BatchFileReader
 from .config import (
     BrowserConfig,
     CrawlConfig,
@@ -63,6 +64,7 @@ class CLIOrchestrator:
             self.extraction_service, crawl_config, extraction_config
         )
         self.url_expander = URLExpander()
+        self.batch_reader = BatchFileReader()
 
         # Initialize parallel processor
         self.parallel_processor = ParallelProcessor(
@@ -413,3 +415,121 @@ class CLIOrchestrator:
                 self.handle_output(result)
             else:
                 sys.exit(1)
+
+    async def run_batch(self, batch_file_path: str) -> None:
+        """
+        Run batch processing workflow.
+
+        Args:
+            batch_file_path: Path to the batch file containing URLs
+        """
+        # Validate batch file
+        is_valid, message = self.batch_reader.validate_batch_file(batch_file_path)
+        if not is_valid:
+            error_console.print(f"[red]Error:[/red] {message}")
+            sys.exit(1)
+
+        if not self.output_config.quiet:
+            console.print(f"[cyan]{message}[/cyan]")
+
+        # Read URLs from batch file
+        try:
+            batch_urls = self.batch_reader.read_urls_from_file(batch_file_path)
+        except Exception as e:
+            error_console.print(f"[red]Error reading batch file:[/red] {e}")
+            sys.exit(1)
+
+        # Require output directory for batch processing
+        if not self.output_config.output_path:
+            error_console.print(
+                "[red]Error:[/red] Batch processing requires --output-dir or --output option"
+            )
+            sys.exit(1)
+
+        # Expand all URLs (including glob patterns)
+        all_expanded_urls = []
+
+        if not self.output_config.quiet:
+            console.print(f"[cyan]Expanding URLs from batch file...[/cyan]")
+
+        for url in batch_urls:
+            if not self.ignore_glob and self.url_expander.is_expandable_url(url):
+                expanded = self.url_expander.expand_url(url)
+                validated = self.url_expander.validate_expanded_urls(expanded)
+                all_expanded_urls.extend(validated)
+
+                if not self.output_config.quiet and len(validated) > 1:
+                    console.print(
+                        f"  [dim]Expanded {url} → {len(validated)} URLs[/dim]"
+                    )
+            else:
+                # Add single URL (no expansion)
+                all_expanded_urls.append(url)
+
+        if not all_expanded_urls:
+            error_console.print(
+                "[red]Error:[/red] No valid URLs found after processing batch file"
+            )
+            sys.exit(1)
+
+        if not self.output_config.quiet:
+            parallel_info = (
+                f" (using {self.parallel_config.max_workers} workers)"
+                if self.parallel_config.max_workers > 1
+                else ""
+            )
+            console.print(
+                f"[cyan]Processing {len(all_expanded_urls)} URLs total{parallel_info}[/cyan]"
+            )
+
+        # Process all URLs with parallel processing
+        extraction_kwargs = {
+            "process_math": self.extraction_config.process_math,
+            "favor_precision": self.extraction_config.favor_precision,
+            "include_links": self.extraction_config.include_links,
+            "include_images": self.extraction_config.include_images,
+            "include_comments": self.extraction_config.include_comments,
+            "include_formatting": self.extraction_config.include_formatting,
+            "include_tables": self.extraction_config.include_tables,
+            "deduplicate": self.extraction_config.deduplicate,
+            "target_lang": self.extraction_config.target_lang,
+        }
+
+        if not self.output_config.quiet:
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+                transient=True,
+            ) as progress:
+                task = progress.add_task("Processing batch URLs...", total=None)
+
+                # Use parallel processing
+                results = await self.parallel_processor.process_urls_parallel(
+                    all_expanded_urls, self.playwright_config, **extraction_kwargs
+                )
+
+                progress.update(task, completed=True)
+        else:
+            # Use parallel processing without progress display
+            results = await self.parallel_processor.process_urls_parallel(
+                all_expanded_urls, self.playwright_config, **extraction_kwargs
+            )
+
+        # Filter out None results and add URL information
+        filtered_results = []
+        for i, result in enumerate(results):
+            if result:
+                result["url"] = all_expanded_urls[i]
+                filtered_results.append(result)
+
+        results = filtered_results
+
+        if not results:
+            error_console.print(
+                "[red]Error:[/red] No content successfully extracted from batch"
+            )
+            sys.exit(1)
+
+        # Output results (always as multiple files for batch processing)
+        self.handle_output(results)

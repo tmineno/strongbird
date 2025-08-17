@@ -1,0 +1,6 @@
+# Simple batch file for testing
+# Contains basic URLs without globbing patterns
+
+https://httpbin.org/html
+https://httpbin.org/json
+https://httpbin.org/get

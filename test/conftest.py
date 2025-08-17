@@ -93,6 +93,42 @@ def comprehensive_math_file(fixtures_dir):
     return path
 
 
+@pytest.fixture
+def simple_batch_file(fixtures_dir):
+    """Get path to simple batch test file."""
+    path = fixtures_dir / "test_batch_simple.txt"
+    if not path.exists():
+        pytest.skip(f"Test file not found: {path}")
+    return path
+
+
+@pytest.fixture
+def glob_batch_file(fixtures_dir):
+    """Get path to glob pattern batch test file."""
+    path = fixtures_dir / "test_batch_glob.txt"
+    if not path.exists():
+        pytest.skip(f"Test file not found: {path}")
+    return path
+
+
+@pytest.fixture
+def mixed_batch_file(fixtures_dir):
+    """Get path to mixed content batch test file."""
+    path = fixtures_dir / "test_batch_mixed.txt"
+    if not path.exists():
+        pytest.skip(f"Test file not found: {path}")
+    return path
+
+
+@pytest.fixture
+def empty_batch_file(fixtures_dir):
+    """Get path to empty batch test file."""
+    path = fixtures_dir / "test_batch_empty.txt"
+    if not path.exists():
+        pytest.skip(f"Test file not found: {path}")
+    return path
+
+
 # ============================================================================
 # Helper Functions
 # ============================================================================
@@ -130,6 +166,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "slow: mark test as slow running")
     config.addinivalue_line("markers", "cli: mark test as a CLI test")
     config.addinivalue_line("markers", "math: mark test as a math extraction test")
+    config.addinivalue_line("markers", "batch: mark test as a batch mode test")
 
 
 # ============================================================================

@@ -1,0 +1,23 @@
+# Mixed batch file for comprehensive testing
+# Contains various URL types, comments, empty lines, and edge cases
+
+# Valid URLs
+https://httpbin.org/html
+https://httpbin.org/json
+
+# Empty line above, glob patterns below
+https://httpbin.org/{get,post,put}
+
+# File URLs
+file:///etc/hosts
+
+# Comment with unicode: 测试文件
+https://httpbin.org/anything/unicode-测试
+
+# Invalid URL (should generate warning)
+not-a-valid-url
+
+# Another valid URL
+https://httpbin.org/user-agent
+
+# Final comment

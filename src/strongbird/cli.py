@@ -11,7 +11,7 @@ from .config import ConfigBuilder
 
 
 @click.command()
-@click.argument("source", type=str)
+@click.argument("source", type=str, required=False)
 # Output Options
 @click.option(
     "-o",
@@ -147,17 +147,25 @@ from .config import ConfigBuilder
     default=1,
     help="Number of parallel processes for URL processing (default: 1, max: 10)",
 )
+@click.option(
+    "--batch",
+    type=click.Path(exists=True, readable=True),
+    help="Read URLs from batch file (one URL per line, supports globbing patterns)",
+)
 @click.version_option()
 def main(**kwargs):
     """
     Extract content from web pages using Playwright and Trafilatura.
 
-    SOURCE can be a URL or a local HTML file path.
+    SOURCE can be a URL or a local HTML file path. Use --batch to process URLs from a file.
 
     Examples:
 
         # Basic extraction
         strongbird https://example.com
+
+        # Batch processing from file
+        strongbird --batch urls.txt --output-dir ./results -j 4
 
         # With JavaScript rendering disabled
         strongbird https://example.com --no-playwright
@@ -176,6 +184,23 @@ def main(**kwargs):
         strongbird https://example.com --no-images --no-javascript
     """
     try:
+        # Validate arguments
+        source = kwargs.get("source")
+        batch_file = kwargs.get("batch")
+
+        if not source and not batch_file:
+            click.echo(
+                "Error: Either SOURCE argument or --batch option must be provided",
+                err=True,
+            )
+            sys.exit(1)
+
+        if source and batch_file:
+            click.echo(
+                "Error: Cannot use both SOURCE argument and --batch option together",
+                err=True,
+            )
+            sys.exit(1)
         # Build configuration objects from CLI arguments
         config_builder = ConfigBuilder()
         (
@@ -203,7 +228,10 @@ def main(**kwargs):
         )
 
         # Run the extraction workflow
-        asyncio.run(orchestrator.run(kwargs["source"]))
+        if batch_file:
+            asyncio.run(orchestrator.run_batch(batch_file))
+        else:
+            asyncio.run(orchestrator.run(source))
 
     except KeyboardInterrupt:
         print("\nOperation cancelled by user", file=sys.stderr)
