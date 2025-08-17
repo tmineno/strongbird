@@ -57,6 +57,25 @@ uv run strongbird https://example.com -f xml
 uv run strongbird https://example.com -f csv
 ```
 
+### Crawling Multiple Pages
+
+```bash
+# Crawl linked pages and save as multiple files (recommended)
+uv run strongbird https://example.com --crawl-depth 1 --output-dir ./crawl_results
+
+# Crawl and combine into single file
+uv run strongbird https://example.com --crawl-depth 1 -o combined.md
+
+# Deep crawling with custom settings
+uv run strongbird https://example.com --crawl-depth 2 --max-pages 20 --crawl-delay 2.0 --output-dir ./deep_crawl
+
+# Crawl mathematical content from academic sites
+uv run strongbird https://dlmf.nist.gov/1.3 --crawl-depth 1 --process-math --ignore-robots-txt --output-dir ./math_pages
+
+# Domain-restricted crawling
+uv run strongbird https://example.com --crawl-depth 1 --same-domain-only --output-dir ./same_domain
+```
+
 ### JavaScript-Heavy Sites
 
 ```bash
@@ -113,40 +132,54 @@ uv run strongbird https://math-heavy-site.com --process-math
 
 ## Options
 
-### Core Options
+### 📄 Output Options
+
 - `-o, --output PATH`: Save output to file
+- `--output-dir DIRECTORY`: Save multiple files when crawling (depth >= 1)
 - `-f, --format`: Output format (markdown, text, xml, json, csv)
-- `--no-playwright`: Disable Playwright rendering
 
-### Browser Options
-- `--headless/--no-headless`: Run browser in headless mode
+### 🕷️ Crawling Options
+
+- `--crawl-depth INTEGER`: Maximum crawling depth (0=current page only, 1=include linked pages, etc.)
+- `--max-pages INTEGER`: Maximum number of pages to crawl (default: 10)
+- `--crawl-delay FLOAT`: Delay between crawl requests in seconds (default: 1.0)
+- `--same-domain-only/--allow-external-domains`: Only crawl pages on the same domain (default: True)
+- `--respect-robots-txt/--ignore-robots-txt`: Respect robots.txt files (default: True)
+
+### 🌐 Browser & Rendering Options
+
+- `--no-playwright`: Disable Playwright rendering (use simple HTTP fetch)
+- `--headless/--no-headless`: Run browser in headless mode (default: True)
 - `--browser`: Browser to use (chromium, firefox, webkit)
-- `--viewport`: Viewport size (WIDTHxHEIGHT)
-- `--user-agent`: Custom user agent
-- `--timeout`: Page load timeout in milliseconds
+- `--viewport`: Viewport size (WIDTHxHEIGHT, default: 1920x1080)
+- `--user-agent`: Custom user agent string
+- `--timeout`: Page load timeout in milliseconds (default: 30000)
 
-### JavaScript Rendering
-- `--wait-for`: CSS selector to wait for
+### ⚡ JavaScript & Loading Options
+
+- `--wait-for`: CSS selector to wait for before extraction
 - `--scroll`: Scroll to bottom for lazy loading
-- `--wait-time`: Additional wait time in milliseconds
+- `--wait-time`: Additional wait time in milliseconds after page load
 - `--execute-script`: JavaScript to execute before extraction
-- `--no-javascript`: Disable JavaScript
-- `--no-images`: Disable image loading
+- `--no-javascript`: Disable JavaScript execution
+- `--no-images`: Disable image loading for faster extraction
 
-### Content Options
-- `--with-metadata/--no-metadata`: Include metadata
-- `--include-comments`: Include comments
-- `--include-links`: Include links
-- `--include-images`: Include images
+### 📋 Content Extraction Options
+
+- `--with-metadata/--no-metadata`: Include metadata (default: True)
+- `--include-comments`: Include comments in extraction
+- `--include-links`: Include links in extraction
+- `--include-images`: Include images in extraction
 - `--include-formatting`: Include text formatting (bold, italic, etc.)
 - `--process-math`: Process mathematical equations to TeX format ($$...$$ and $...$)
-- `--no-tables`: Exclude tables
-- `--no-deduplicate`: Disable deduplication
-- `--target-lang`: Target language
-- `--favor-precision`: Favor precision over recall
+- `--no-tables`: Exclude tables from extraction
+- `--no-deduplicate`: Disable content deduplication
+- `--target-lang`: Target language for extraction (e.g., en, de, fr)
+- `--favor-precision`: Favor precision over recall in extraction
 
-### Other Options
-- `--screenshot`: Save screenshot to path
+### 🔧 Other Options
+
+- `--screenshot PATH`: Save screenshot to specified path
 - `-q, --quiet`: Suppress progress messages
 - `--version`: Show version
 - `--help`: Show help
@@ -154,6 +187,7 @@ uv run strongbird https://math-heavy-site.com --process-math
 ## Examples
 
 ### Extract article from news site
+
 ```bash
 uv run strongbird https://news.site/article \
   --wait-for "article" \
@@ -162,6 +196,7 @@ uv run strongbird https://news.site/article \
 ```
 
 ### Extract from JavaScript SPA
+
 ```bash
 uv run strongbird https://spa-app.com \
   --wait-for "[data-loaded='true']" \
@@ -171,6 +206,7 @@ uv run strongbird https://spa-app.com \
 ```
 
 ### Fast extraction without rendering
+
 ```bash
 uv run strongbird https://simple-site.com \
   --no-playwright \
@@ -179,6 +215,7 @@ uv run strongbird https://simple-site.com \
 ```
 
 ### Extract with screenshot
+
 ```bash
 uv run strongbird https://example.com \
   --screenshot page.png \
@@ -194,6 +231,7 @@ Strongbird combines two powerful tools:
 2. **Trafilatura**: Performs intelligent content extraction and cleaning
 
 The workflow:
+
 1. Playwright renders the page (if enabled)
 2. Mathematical equations are processed (if `--process-math` is enabled)
 3. HTML is passed to Trafilatura for extraction
@@ -240,6 +278,7 @@ uv run strongbird https://math-site.com --include-formatting --process-math
 ### Output Format
 
 Mathematical equations are converted to standard TeX notation:
+
 - Inline math: `$equation$`
 - Display math: `$$equation$$`
 
