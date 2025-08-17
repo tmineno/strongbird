@@ -12,6 +12,8 @@ A powerful web page extractor that combines Playwright for JavaScript rendering 
 - **Performance Optimizations**: Disable images/JavaScript for faster extraction
 - **Metadata Extraction**: Automatic extraction of title, author, date, and more
 - **Screenshot Capture**: Take screenshots while extracting content
+- **URL Expansion**: Support for curl-style URL globbing patterns for bulk extraction
+- **Parallel Processing**: Process multiple URLs concurrently for improved performance
 
 ## Installation
 
@@ -36,6 +38,25 @@ uv run strongbird ./article.html
 
 # Disable Playwright (simple HTTP fetch)
 uv run strongbird https://example.com --no-playwright
+```
+
+### URL Expansion & Parallel Processing
+
+```bash
+# Extract from multiple URLs using curl globbing patterns
+uv run strongbird "https://example.com/page-[1-10].html" --output-dir ./pages
+
+# Extract with zero-padded numbers
+uv run strongbird "https://api.example.com/items/[001-100].json" -j 4
+
+# Extract from multiple domains/endpoints
+uv run strongbird "https://{docs,api,blog}.example.com/content.html" --output-dir ./sites
+
+# Disable URL expansion if needed
+uv run strongbird "https://example.com/[literal-brackets].html" --ignore-glob
+
+# Parallel processing (4 concurrent workers)
+uv run strongbird "https://news.com/articles/[1-50].html" -j 4 --output-dir ./articles
 ```
 
 ### Output Formats
@@ -177,6 +198,11 @@ uv run strongbird https://math-heavy-site.com --process-math
 - `--target-lang`: Target language for extraction (e.g., en, de, fr)
 - `--favor-precision`: Favor precision over recall in extraction
 
+### 🚀 URL Expansion & Parallel Processing Options
+
+- `--ignore-glob`: Disable URL globbing expansion for URLs with literal brackets
+- `-j, --proc INTEGER`: Number of parallel workers for concurrent processing (1-10, default: 1)
+
 ### 🔧 Other Options
 
 - `--screenshot PATH`: Save screenshot to specified path
@@ -223,6 +249,26 @@ uv run strongbird https://example.com \
   -o content.md
 ```
 
+### Bulk extraction with URL expansion
+
+```bash
+# Extract multiple pages with numeric range
+uv run strongbird "https://docs.site.com/chapter-[1-25].html" \
+  --output-dir ./chapters \
+  -j 3
+
+# Extract from multiple subdomains
+uv run strongbird "https://{blog,docs,api}.example.com/content" \
+  --output-dir ./sites \
+  --format json
+
+# Extract with zero-padded numbers
+uv run strongbird "https://archive.org/items/[001-100]" \
+  --output-dir ./archive \
+  -j 5 \
+  --wait-time 2000
+```
+
 ## Architecture
 
 Strongbird combines two powerful tools:
@@ -232,11 +278,13 @@ Strongbird combines two powerful tools:
 
 The workflow:
 
-1. Playwright renders the page (if enabled)
-2. Mathematical equations are processed (if `--process-math` is enabled)
-3. HTML is passed to Trafilatura for extraction
-4. Content is formatted according to the specified output format
-5. Metadata is preserved and included (if requested)
+1. **URL Expansion**: If globbing patterns are detected, URLs are expanded (e.g., `[1-10]` → 10 URLs)
+2. **Parallel Processing**: Multiple URLs are processed concurrently using page pools (if `-j > 1`)
+3. **Playwright Rendering**: Each page is rendered in a browser instance (if enabled)
+4. **Mathematical Processing**: Equations are converted to TeX format (if `--process-math` is enabled)
+5. **Content Extraction**: HTML is passed to Trafilatura for intelligent content extraction
+6. **Output Generation**: Content is formatted and saved according to specified options
+7. **Metadata Preservation**: Metadata is extracted and included (if requested)
 
 ## Mathematical Equation Processing
 
@@ -284,6 +332,72 @@ Mathematical equations are converted to standard TeX notation:
 
 This ensures compatibility with Markdown processors, LaTeX, and other document systems that support TeX math notation.
 
+## URL Expansion with Curl Globbing
+
+Strongbird supports curl-style URL globbing patterns for bulk extraction. This feature automatically detects patterns in URLs and expands them into multiple URLs for processing.
+
+### Supported Patterns
+
+#### Numeric Ranges
+```bash
+# Basic numeric range
+uv run strongbird "https://example.com/page-[1-10].html"
+
+# Zero-padded numbers
+uv run strongbird "https://api.com/items/[001-100].json"
+
+# Step intervals
+uv run strongbird "https://site.com/data-[1-100:5].csv"  # 1, 6, 11, 16, ...
+```
+
+#### Alphabetic Ranges
+```bash
+# Lowercase letters
+uv run strongbird "https://docs.com/section-[a-z].html"
+
+# Uppercase letters
+uv run strongbird "https://api.com/category-[A-Z].json"
+```
+
+#### Lists/Alternatives
+```bash
+# Multiple options
+uv run strongbird "https://{docs,api,blog}.example.com/content.html"
+
+# Mixed patterns
+uv run strongbird "https://{dev,staging,prod}.site.com/data-[1-5].json"
+```
+
+#### Complex Combinations
+```bash
+# Multiple patterns in single URL
+uv run strongbird "https://{api,cdn}.site.com/v[1-3]/items/[a-c].json"
+# Expands to: api.site.com/v1/items/a.json, api.site.com/v1/items/b.json, etc.
+```
+
+### URL Expansion Options
+
+- **Automatic Detection**: URL patterns are detected automatically without flags
+- **Disable Expansion**: Use `--ignore-glob` to treat brackets as literal characters
+- **Output Handling**: Use `--output-dir` for multiple files or `-o` for combined output
+
+## Parallel Processing
+
+Strongbird can process multiple URLs concurrently, significantly improving performance for bulk extraction tasks.
+
+### Parallel Processing Examples
+
+```bash
+# Process 4 URLs concurrently
+uv run strongbird "https://site.com/articles/[1-20].html" -j 4 --output-dir ./articles
+
+# Combine with crawling for maximum efficiency
+uv run strongbird "https://docs.site.com/[1-10].html" --crawl-depth 1 -j 3
+
+# Process different sites in parallel
+uv run strongbird "https://{docs,api,blog}.example.com" -j 3 --output-dir ./sites
+```
+
 ## Testing
 
 Strongbird includes a comprehensive test suite to ensure reliable math extraction and content processing.
@@ -291,11 +405,19 @@ Strongbird includes a comprehensive test suite to ensure reliable math extractio
 ### Running Tests
 
 ```bash
-# Run all tests
-uv run python test/run_tests.py
+# Run all tests with pytest
+uv run pytest test/
 
-# Run math extraction tests only
-uv run python test/test_math_extraction.py
+# Run specific test categories
+uv run pytest test/ -m "math"          # Math extraction tests
+uv run pytest test/ -m "cli"           # CLI functionality tests
+uv run pytest test/ -m "integration"   # Integration tests (requires network)
+
+# Run tests excluding network-dependent ones
+uv run pytest test/ -m "not integration"
+
+# Run with verbose output
+uv run pytest test/ -v
 
 # Test individual fixtures
 uv run strongbird "file://$(pwd)/test/fixtures/comprehensive-math-test.html" --process-math

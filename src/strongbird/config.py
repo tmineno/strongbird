@@ -133,6 +133,20 @@ class OutputConfig:
         )
 
 
+@dataclass
+class ParallelConfig:
+    """Parallel processing configuration."""
+
+    max_workers: int = 1
+
+    @classmethod
+    def from_cli_args(cls, **kwargs) -> "ParallelConfig":
+        """Create ParallelConfig from CLI arguments."""
+        return cls(
+            max_workers=kwargs.get("proc", 1),
+        )
+
+
 class ConfigBuilder:
     """Build all configuration objects from CLI arguments."""
 
@@ -140,7 +154,12 @@ class ConfigBuilder:
     def build_all_configs(
         **kwargs,
     ) -> Tuple[
-        BrowserConfig, ExtractionConfig, PlaywrightConfig, CrawlConfig, OutputConfig
+        BrowserConfig,
+        ExtractionConfig,
+        PlaywrightConfig,
+        CrawlConfig,
+        OutputConfig,
+        ParallelConfig,
     ]:
         """
         Build all configuration objects from CLI arguments.
@@ -154,4 +173,5 @@ class ConfigBuilder:
             PlaywrightConfig.from_cli_args(**kwargs),
             CrawlConfig.from_cli_args(**kwargs),
             OutputConfig.from_cli_args(**kwargs),
+            ParallelConfig.from_cli_args(**kwargs),
         )

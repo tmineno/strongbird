@@ -12,10 +12,13 @@ from .config import (
     CrawlConfig,
     ExtractionConfig,
     OutputConfig,
+    ParallelConfig,
     PlaywrightConfig,
 )
 from .formatter import format_output
+from .parallel import ParallelProcessor
 from .services import CrawlService, ExtractionService
+from .url_expander import URLExpander
 
 console = Console()
 error_console = Console(stderr=True)
@@ -31,6 +34,8 @@ class CLIOrchestrator:
         playwright_config: PlaywrightConfig,
         crawl_config: CrawlConfig,
         output_config: OutputConfig,
+        parallel_config: ParallelConfig,
+        ignore_glob: bool = False,
     ):
         """
         Initialize CLI orchestrator.
@@ -41,17 +46,29 @@ class CLIOrchestrator:
             playwright_config: Playwright configuration
             crawl_config: Crawl configuration
             output_config: Output configuration
+            parallel_config: Parallel processing configuration
+            ignore_glob: Whether to ignore URL globbing patterns
         """
         self.browser_config = browser_config
         self.extraction_config = extraction_config
         self.playwright_config = playwright_config
         self.crawl_config = crawl_config
         self.output_config = output_config
+        self.parallel_config = parallel_config
+        self.ignore_glob = ignore_glob
 
         # Initialize services
         self.extraction_service = ExtractionService(extraction_config, browser_config)
         self.crawl_service = CrawlService(
             self.extraction_service, crawl_config, extraction_config
+        )
+        self.url_expander = URLExpander()
+
+        # Initialize parallel processor
+        self.parallel_processor = ParallelProcessor(
+            browser_manager=self.extraction_service.browser_manager,
+            max_workers=parallel_config.max_workers,
+            use_playwright=browser_config.javascript,
         )
 
     def validate_source(self, source: str) -> tuple[bool, Optional[Path]]:
@@ -281,8 +298,80 @@ class CLIOrchestrator:
         Args:
             source: Source URL or file path
         """
+        # Check for URL expansion patterns first
+        if (
+            not self.ignore_glob
+            and source.startswith(("http://", "https://"))
+            and self.url_expander.is_expandable_url(source)
+        ):
+
+            # Handle URL expansion
+            expanded_urls = self.url_expander.expand_url(source)
+            validated_urls = self.url_expander.validate_expanded_urls(expanded_urls)
+
+            if not validated_urls:
+                error_console.print(
+                    "[red]Error:[/red] No valid URLs generated from pattern"
+                )
+                sys.exit(1)
+
+            if not self.output_config.quiet:
+                parallel_info = (
+                    f" (using {self.parallel_config.max_workers} workers)"
+                    if self.parallel_config.max_workers > 1
+                    else ""
+                )
+                console.print(
+                    f"[cyan]Expanded to {len(validated_urls)} URLs{parallel_info}[/cyan]"
+                )
+
+            # Process expanded URLs with parallel processing
+            extraction_kwargs = {
+                "process_math": self.extraction_config.process_math,
+                "favor_precision": self.extraction_config.favor_precision,
+                "include_links": self.extraction_config.include_links,
+                "include_images": self.extraction_config.include_images,
+                "include_comments": self.extraction_config.include_comments,
+                "include_formatting": self.extraction_config.include_formatting,
+                "include_tables": self.extraction_config.include_tables,
+                "deduplicate": self.extraction_config.deduplicate,
+                "target_lang": self.extraction_config.target_lang,
+            }
+
+            if not self.output_config.quiet:
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn("[progress.description]{task.description}"),
+                    console=console,
+                    transient=True,
+                ) as progress:
+                    task = progress.add_task("Processing expanded URLs...", total=None)
+
+                    # Use parallel processing
+                    results = await self.parallel_processor.process_urls_parallel(
+                        validated_urls, self.playwright_config, **extraction_kwargs
+                    )
+
+                    progress.update(task, completed=True)
+            else:
+                # Use parallel processing without progress display
+                results = await self.parallel_processor.process_urls_parallel(
+                    validated_urls, self.playwright_config, **extraction_kwargs
+                )
+
+            # Filter out None results and add URL information
+            filtered_results = []
+            for i, result in enumerate(results):
+                if result:
+                    result["url"] = validated_urls[i]
+                    filtered_results.append(result)
+
+            results = filtered_results
+
+            self.handle_output(results)
+
         # Check if crawling is requested
-        if self.crawl_config.max_depth > 0:
+        elif self.crawl_config.max_depth > 0:
             # Validate that source is a URL
             if not source.startswith(("http://", "https://")):
                 error_console.print(

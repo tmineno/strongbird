@@ -135,6 +135,18 @@ from .config import ConfigBuilder
     "--screenshot", type=click.Path(), help="Save screenshot to specified path"
 )
 @click.option("--quiet", "-q", is_flag=True, help="Suppress progress messages")
+@click.option(
+    "--ignore-glob",
+    is_flag=True,
+    help="Disable URL globbing expansion (treat patterns literally)",
+)
+@click.option(
+    "-j",
+    "--proc",
+    type=click.IntRange(1, 10),
+    default=1,
+    help="Number of parallel processes for URL processing (default: 1, max: 10)",
+)
 @click.version_option()
 def main(**kwargs):
     """
@@ -172,6 +184,7 @@ def main(**kwargs):
             playwright_config,
             crawl_config,
             output_config,
+            parallel_config,
         ) = config_builder.build_all_configs(**kwargs)
 
         # Override browser config if no-playwright is specified
@@ -185,6 +198,8 @@ def main(**kwargs):
             playwright_config=playwright_config,
             crawl_config=crawl_config,
             output_config=output_config,
+            parallel_config=parallel_config,
+            ignore_glob=kwargs.get("ignore_glob", False),
         )
 
         # Run the extraction workflow
