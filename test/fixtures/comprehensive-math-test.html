@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comprehensive Math Test</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+</head>
+<body>
+    <article>
+        <h1>Comprehensive Mathematical Content Test</h1>
+        
+        <h2>KaTeX Rendered Math</h2>
+        <p>The quadratic formula: <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi><mo>=</mo><mfrac><mrow><mo>−</mo><mi>b</mi><mo>±</mo><msqrt><mrow><msup><mi>b</mi><mn>2</mn></msup><mo>−</mo><mn>4</mn><mi>a</mi><mi>c</mi></mrow></msqrt></mrow><mrow><mn>2</mn><mi>a</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true">...</span></span></p>
+        
+        <h2>MathML with TeX annotations</h2>
+        <p>Einstein's equation: <math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo>=</mo><mi>m</mi><msup><mi>c</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">E = mc^2</annotation></semantics></math></p>
+        
+        <h2>Display Math</h2>
+        <div class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mo>∫</mo><msubsup><mn>0</mn><mi>∞</mi></msubsup><msup><mi>e</mi><mrow><mo>−</mo><msup><mi>x</mi><mn>2</mn></msup></mrow></msup><mi>d</mi><mi>x</mi><mo>=</mo><mfrac><msqrt><mi>π</mi></msqrt><mn>2</mn></mfrac></mrow><annotation encoding="application/x-tex">\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true">...</span></span></div>
+        
+        <h2>MathJax v2 Script Tags</h2>
+        <script type="math/tex">
+        \sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}
+        </script>
+        
+        <script type="math/tex; mode=display">
+        \nabla^2 \phi = 4\pi G \rho
+        </script>
+        
+        <h2>Plain MathML (fallback test)</h2>
+        <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+            <mrow>
+                <mi>f</mi>
+                <mo>(</mo>
+                <mi>x</mi>
+                <mo>)</mo>
+                <mo>=</mo>
+                <mfrac>
+                    <mn>1</mn>
+                    <mrow>
+                        <mn>1</mn>
+                        <mo>+</mo>
+                        <msup>
+                            <mi>e</mi>
+                            <mrow>
+                                <mo>−</mo>
+                                <mi>x</mi>
+                            </mrow>
+                        </msup>
+                    </mrow>
+                </mfrac>
+            </mrow>
+        </math>
+        
+        <p>This page tests multiple math rendering formats to verify comprehensive extraction.</p>
+    </article>
+</body>
+</html>

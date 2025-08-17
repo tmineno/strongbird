@@ -1,0 +1,23 @@
+[project]
+name = "strongbird"
+version = "0.1.0"
+description = "Web page extractor using Playwright for rendering and Trafilatura for content extraction"
+readme = "README.md"
+authors = [
+    { name = "Taiki Mineno", email = "taiki.mineno@gmail.com" }
+]
+requires-python = ">=3.9"
+dependencies = [
+    "playwright>=1.40.0",
+    "trafilatura>=1.6.0",
+    "click>=8.0.0",
+    "rich>=13.0.0",
+    "aiohttp>=3.9.0",
+]
+
+[project.scripts]
+strongbird = "strongbird.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.8.11,<0.9.0"]
+build-backend = "uv_build"

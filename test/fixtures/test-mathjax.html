@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MathJax Test</title>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+</head>
+<body>
+    <article>
+        <h1>MathJax v3 Test</h1>
+        
+        <p>Here are some equations rendered with MathJax v3:</p>
+        
+        <h2>Inline Math</h2>
+        <p>The equation $e^{i\pi} + 1 = 0$ is Euler's identity.</p>
+        
+        <h2>Display Math</h2>
+        <p>Maxwell's equations:</p>
+        $$\nabla \cdot \mathbf{E} = \frac{\rho}{\varepsilon_0}$$
+        
+        <p>Schrödinger equation:</p>
+        $$i\hbar\frac{\partial}{\partial t}\Psi(\mathbf{r},t) = \hat{H}\Psi(\mathbf{r},t)$$
+        
+        <h2>MathJax v2 style script tags</h2>
+        <script type="math/tex">
+        \sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}
+        </script>
+        
+        <script type="math/tex; mode=display">
+        \int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
+        </script>
+    </article>
+</body>
+</html>
