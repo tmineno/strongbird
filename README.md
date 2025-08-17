@@ -14,6 +14,7 @@ A powerful web page extractor that combines Playwright for JavaScript rendering 
 - **Screenshot Capture**: Take screenshots while extracting content
 - **URL Expansion**: Support for curl-style URL globbing patterns for bulk extraction
 - **Parallel Processing**: Process multiple URLs concurrently for improved performance
+- **Batch File Processing**: Process multiple URLs from text files with glob pattern support
 
 ## Installation
 
@@ -40,23 +41,42 @@ uv run strongbird ./article.html
 uv run strongbird https://example.com --no-playwright
 ```
 
+### Batch File Processing
+
+```bash
+# Process URLs from a batch file
+uv run strongbird --batch urls.txt --output ./results -j 4
+
+# Batch file with glob patterns and comments
+uv run strongbird --batch sites.txt --output ./extracted --format json -j 3
+
+# Example batch file format (urls.txt):
+# # Comments are supported
+# https://example.com/page1.html
+# https://example.com/articles/[1-10].html  # Glob patterns work
+# https://{docs,api}.example.com/index.html
+#
+# # Empty lines are ignored
+# https://httpbin.org/json
+```
+
 ### URL Expansion & Parallel Processing
 
 ```bash
 # Extract from multiple URLs using curl globbing patterns
-uv run strongbird "https://example.com/page-[1-10].html" --output-dir ./pages
+uv run strongbird "https://example.com/page-[1-10].html" --output ./pages
 
 # Extract with zero-padded numbers
 uv run strongbird "https://httpbin.org/status/[200-204]" -j 4
 
 # Extract from multiple domains/endpoints
-uv run strongbird "https://{docs,api,blog}.example.com/content.html" --output-dir ./sites
+uv run strongbird "https://{docs,api,blog}.example.com/content.html" --output ./sites
 
 # Disable URL expansion if needed
 uv run strongbird "https://example.com/[literal-brackets].html" --ignore-glob
 
 # Parallel processing (4 concurrent workers)
-uv run strongbird "https://httpbin.org/status/[200-250]" -j 4 --output-dir ./articles
+uv run strongbird "https://httpbin.org/status/[200-250]" -j 4 --output ./articles
 ```
 
 ### Output Formats
@@ -155,9 +175,12 @@ uv run strongbird https://en.wikipedia.org/wiki/Quadratic_formula --process-math
 
 ### 📄 Output Options
 
-- `-o, --output PATH`: Save output to file
-- `--output-dir DIRECTORY`: Save multiple files when crawling (depth >= 1)
+- `-o, --output PATH`: Save output to file or directory
 - `-f, --format`: Output format (markdown, text, xml, json, csv)
+
+### 📋 Batch Processing Options
+
+- `--batch FILE`: Read URLs from batch file (one URL per line, supports globbing patterns)
 
 ### 🕷️ Crawling Options
 
@@ -249,22 +272,38 @@ uv run strongbird https://example.com \
   -o content.md
 ```
 
+### Batch file processing
+
+```bash
+# Process URLs from batch file with parallel workers
+uv run strongbird --batch urls.txt \
+  --output ./results \
+  -j 4 \
+  --format markdown
+
+# Process with different output formats
+uv run strongbird --batch sites.txt \
+  --output ./json_output \
+  --format json \
+  --no-playwright
+```
+
 ### Bulk extraction with URL expansion
 
 ```bash
 # Extract multiple pages with numeric range
 uv run strongbird "https://httpbin.org/status/[200-225]" \
-  --output-dir ./chapters \
+  --output ./chapters \
   -j 3
 
 # Extract from multiple subdomains
 uv run strongbird "https://{blog,docs,api}.example.com/content" \
-  --output-dir ./sites \
+  --output ./sites \
   --format json
 
 # Extract with zero-padded numbers
 uv run strongbird "https://httpbin.org/status/[200-250]" \
-  --output-dir ./archive \
+  --output ./archive \
   -j 5 \
   --wait-time 2000
 ```
@@ -278,13 +317,14 @@ Strongbird combines two powerful tools:
 
 The workflow:
 
-1. **URL Expansion**: If globbing patterns are detected, URLs are expanded (e.g., `[1-10]` → 10 URLs)
-2. **Parallel Processing**: Multiple URLs are processed concurrently using page pools (if `-j > 1`)
-3. **Playwright Rendering**: Each page is rendered in a browser instance (if enabled)
-4. **Mathematical Processing**: Equations are converted to TeX format (if `--process-math` is enabled)
-5. **Content Extraction**: HTML is passed to Trafilatura for intelligent content extraction
-6. **Output Generation**: Content is formatted and saved according to specified options
-7. **Metadata Preservation**: Metadata is extracted and included (if requested)
+1. **Input Processing**: URLs are sourced from command line arguments or batch files
+2. **URL Expansion**: If globbing patterns are detected, URLs are expanded (e.g., `[1-10]` → 10 URLs)
+3. **Parallel Processing**: Multiple URLs are processed concurrently using page pools (if `-j > 1`)
+4. **Playwright Rendering**: Each page is rendered in a browser instance (if enabled)
+5. **Mathematical Processing**: Equations are converted to TeX format (if `--process-math` is enabled)
+6. **Content Extraction**: HTML is passed to Trafilatura for intelligent content extraction
+7. **Output Generation**: Content is formatted and saved according to specified options
+8. **Metadata Preservation**: Metadata is extracted and included (if requested)
 
 ## Mathematical Equation Processing
 
@@ -380,6 +420,59 @@ uv run strongbird "https://httpbin.org/{get,post}/v[1-3]/items/[a-c]"
 - **Disable Expansion**: Use `--ignore-glob` to treat brackets as literal characters
 - **Output Handling**: Use `--output-dir` for multiple files or `-o` for combined output
 
+## Batch File Processing
+
+Strongbird supports processing multiple URLs from text files, making it easy to handle large-scale extraction tasks with persistent URL lists.
+
+### Batch File Format
+
+Batch files are simple text files with one URL per line:
+
+```
+# Comments start with # and are ignored
+https://example.com/page1.html
+https://example.com/page2.html
+
+# Empty lines are ignored
+https://httpbin.org/json
+
+# Glob patterns work in batch files
+https://example.com/articles/[1-10].html
+https://{docs,api,blog}.example.com/index.html
+
+# File URLs are supported
+file:///path/to/local/file.html
+```
+
+### Batch Processing Features
+
+- **Comment Support**: Lines starting with `#` are treated as comments
+- **Empty Line Handling**: Empty lines are automatically ignored
+- **Glob Pattern Support**: Full URL expansion support within batch files
+- **Unicode Support**: Handles international characters in URLs and comments
+- **Error Resilience**: Invalid URLs generate warnings but don't stop processing
+- **Parallel Processing**: Use `-j` flag for concurrent processing of batch URLs
+
+### Batch Processing Examples
+
+```bash
+# Basic batch processing
+uv run strongbird --batch urls.txt --output ./results
+
+# Batch processing with parallel workers
+uv run strongbird --batch sites.txt --output ./extracted -j 4
+
+# Batch processing with different formats
+uv run strongbird --batch pages.txt --output ./json_results --format json
+
+# Combine batch processing with other options
+uv run strongbird --batch academic_papers.txt \
+  --output ./papers \
+  --process-math \
+  --format markdown \
+  -j 3
+```
+
 ## Parallel Processing
 
 Strongbird can process multiple URLs concurrently, significantly improving performance for bulk extraction tasks.
@@ -388,13 +481,13 @@ Strongbird can process multiple URLs concurrently, significantly improving perfo
 
 ```bash
 # Process 4 URLs concurrently
-uv run strongbird "https://httpbin.org/status/[200-220]" -j 4 --output-dir ./articles
+uv run strongbird "https://httpbin.org/status/[200-220]" -j 4 --output ./articles
 
 # Combine with crawling for maximum efficiency
 uv run strongbird "https://httpbin.org/links/[1-10]" --crawl-depth 1 -j 3
 
 # Process different sites in parallel
-uv run strongbird "https://{docs,api,blog}.example.com" -j 3 --output-dir ./sites
+uv run strongbird "https://{docs,api,blog}.example.com" -j 3 --output ./sites
 ```
 
 ## Testing
@@ -410,6 +503,7 @@ uv run pytest test/
 # Run specific test categories
 uv run pytest test/ -m "math"          # Math extraction tests
 uv run pytest test/ -m "cli"           # CLI functionality tests
+uv run pytest test/ -m "batch"         # Batch processing tests
 uv run pytest test/ -m "integration"   # Integration tests (requires network)
 
 # Run tests excluding network-dependent ones
