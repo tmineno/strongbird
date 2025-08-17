@@ -299,6 +299,14 @@ Strongbird includes advanced support for mathematical equations through the `--p
 - **LaTeXML**: Processes semantic annotations
 - **Fallback**: Converts basic MathML to TeX for unsupported cases
 
+### Math Processing Examples
+
+```bash
+# Extract from academic paper with equations
+uv run strongbird https://arxiv.org/html/1706.03762v7 --process-math -f markdown
+
+```
+
 ### Wikipedia Math Support
 
 Strongbird has specialized support for Wikipedia's math rendering system:
@@ -308,19 +316,6 @@ Strongbird has specialized support for Wikipedia's math rendering system:
 uv run strongbird "https://en.wikipedia.org/wiki/Poisson_distribution" --process-math
 uv run strongbird "https://en.wikipedia.org/wiki/Fourier_transform" --process-math
 uv run strongbird "https://en.wikipedia.org/wiki/Quadratic_formula" --process-math
-```
-
-### Math Processing Examples
-
-```bash
-# Extract from academic paper with equations
-uv run strongbird https://en.wikipedia.org/wiki/Einstein_field_equations --process-math -f markdown
-
-# Process site with KaTeX rendering
-uv run strongbird https://en.wikipedia.org/wiki/Fourier_transform --process-math
-
-# Extract with both formatting and math
-uv run strongbird https://en.wikipedia.org/wiki/Calculus --include-formatting --process-math
 ```
 
 ### Output Format
@@ -339,6 +334,7 @@ Strongbird supports curl-style URL globbing patterns for bulk extraction. This f
 ### Supported Patterns
 
 #### Numeric Ranges
+
 ```bash
 # Basic numeric range
 uv run strongbird "https://example.com/page-[1-10].html"
@@ -351,6 +347,7 @@ uv run strongbird "https://httpbin.org/status/[200-300:10]"  # 200, 210, 220, ..
 ```
 
 #### Alphabetic Ranges
+
 ```bash
 # Lowercase letters
 uv run strongbird "https://httpbin.org/anything/[a-z]"
@@ -360,6 +357,7 @@ uv run strongbird "https://httpbin.org/anything/[A-Z]"
 ```
 
 #### Lists/Alternatives
+
 ```bash
 # Multiple options
 uv run strongbird "https://{docs,api,blog}.example.com/content.html"
@@ -369,6 +367,7 @@ uv run strongbird "https://httpbin.org/{get,post,put}/[1-5]"
 ```
 
 #### Complex Combinations
+
 ```bash
 # Multiple patterns in single URL
 uv run strongbird "https://httpbin.org/{get,post}/v[1-3]/items/[a-c]"
