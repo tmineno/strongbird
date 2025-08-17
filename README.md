@@ -262,33 +262,9 @@ uv run python test/test_math_extraction.py
 uv run strongbird "file://$(pwd)/test/fixtures/comprehensive-math-test.html" --process-math
 ```
 
-### Test Coverage
-
-The test suite validates:
-- Local HTML fixtures with various math formats (KaTeX, MathJax, MathML)
-- Wikipedia integration tests (MediaWiki Math Extension)
-- Regression testing for math extraction improvements
-- Content extraction accuracy and completeness
-
-### Test Results
-
-Expected test results include:
-- ✅ Comprehensive math test: ~9 equations
-- ✅ MathJax v3 test: ~8 equations  
-- ✅ Wikipedia articles: 200+ equations per complex math page
-- ✅ All math formats properly converted to TeX notation
-
-## Development
-
-See `AGENTS.md` for detailed architecture documentation and development guidelines.
-
 ## Dependencies
 
 - [Playwright](https://playwright.dev/): Browser automation
 - [Trafilatura](https://trafilatura.readthedocs.io/): Content extraction
 - [Click](https://click.palletsprojects.com/): CLI framework
 - [Rich](https://github.com/Textualize/rich): Terminal formatting
-
-## License
-
-ISC
