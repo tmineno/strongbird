@@ -234,15 +234,15 @@ class BrowserManager:
                 await page.screenshot(path=path, full_page=full_page)
 
     @asynccontextmanager
-    async def get_page_pool(self, pool_size: int):
+    async def get_context_pool(self, pool_size: int):
         """
-        Context manager for managing a pool of pages within a single browser context.
+        Context manager for managing a pool of browser contexts for parallel processing.
 
         Args:
-            pool_size: Number of pages to create in the pool
+            pool_size: Number of contexts to create in the pool
 
         Yields:
-            Tuple of (context, list_of_pages)
+            List of browser contexts
         """
         async with self.get_browser() as browser:
             context_options = {
@@ -258,39 +258,50 @@ class BrowserManager:
             if not self.images:
                 context_options["bypass_csp"] = True
 
-            context = await browser.new_context(**context_options)
-
-            # Set cookies if provided
-            if self.cookies:
-                await context.add_cookies(self.cookies)
-
-            # Create pool of pages
-            pages = []
+            # Create pool of contexts
+            contexts = []
             try:
                 for _ in range(pool_size):
-                    page = await context.new_page()
-                    page.set_default_timeout(self.timeout)
+                    context = await browser.new_context(**context_options)
 
-                    # Block image requests if images are disabled
-                    if not self.images:
-                        await page.route(
-                            "**/*",
-                            lambda route: (
-                                route.abort()
-                                if route.request.resource_type == "image"
-                                else route.continue_()
-                            ),
-                        )
+                    # Set cookies if provided
+                    if self.cookies:
+                        await context.add_cookies(self.cookies)
 
-                    pages.append(page)
+                    contexts.append(context)
 
-                yield context, pages
+                yield contexts
 
             finally:
-                # Clean up all pages
-                for page in pages:
-                    await page.close()
-                await context.close()
+                # Clean up all contexts
+                for context in contexts:
+                    await context.close()
+
+    async def create_page_from_context(self, context):
+        """
+        Create a new page from the given context with proper configuration.
+
+        Args:
+            context: Browser context to create page from
+
+        Returns:
+            Configured page instance
+        """
+        page = await context.new_page()
+        page.set_default_timeout(self.timeout)
+
+        # Block image requests if images are disabled
+        if not self.images:
+            await page.route(
+                "**/*",
+                lambda route: (
+                    route.abort()
+                    if route.request.resource_type == "image"
+                    else route.continue_()
+                ),
+            )
+
+        return page
 
     async def fetch_html_with_page(
         self,

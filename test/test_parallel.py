@@ -60,20 +60,19 @@ class TestParallelProcessor:
             assert result == [{"content": "test"}]
 
     @pytest.mark.asyncio
-    async def test_parallel_processing_with_page_pool(self):
-        """Test parallel processing using page pool."""
-        # Mock page pool context manager
-        mock_context = AsyncMock()
-        mock_pages = [AsyncMock(), AsyncMock()]
-        mock_page_pool = AsyncMock()
-        mock_page_pool.__aenter__.return_value = (mock_context, mock_pages)
-        mock_page_pool.__aexit__.return_value = None
+    async def test_parallel_processing_with_context_pool(self):
+        """Test parallel processing using context pool."""
+        # Mock context pool context manager
+        mock_contexts = [AsyncMock(), AsyncMock()]
+        mock_context_pool = AsyncMock()
+        mock_context_pool.__aenter__.return_value = mock_contexts
+        mock_context_pool.__aexit__.return_value = None
 
-        self.browser_manager.get_page_pool.return_value = mock_page_pool
+        self.browser_manager.get_context_pool.return_value = mock_context_pool
 
         # Mock the single URL processing method
         with patch.object(
-            self.processor, "_process_single_url_with_page"
+            self.processor, "_process_single_url_with_context"
         ) as mock_process:
             mock_process.return_value = {"content": "test", "url": "http://example.com"}
 
@@ -82,8 +81,8 @@ class TestParallelProcessor:
                 urls, self.playwright_config
             )
 
-            # Should call get_page_pool with max_workers
-            self.browser_manager.get_page_pool.assert_called_once_with(2)
+            # Should call get_context_pool with max_workers
+            self.browser_manager.get_context_pool.assert_called_once_with(2)
 
             # Should process each URL
             assert mock_process.call_count == 2
@@ -92,18 +91,17 @@ class TestParallelProcessor:
     @pytest.mark.asyncio
     async def test_parallel_processing_exception_handling(self):
         """Test that exceptions in parallel processing are handled gracefully."""
-        # Mock page pool
-        mock_context = AsyncMock()
-        mock_pages = [AsyncMock()]
-        mock_page_pool = AsyncMock()
-        mock_page_pool.__aenter__.return_value = (mock_context, mock_pages)
-        mock_page_pool.__aexit__.return_value = None
+        # Mock context pool
+        mock_contexts = [AsyncMock()]
+        mock_context_pool = AsyncMock()
+        mock_context_pool.__aenter__.return_value = mock_contexts
+        mock_context_pool.__aexit__.return_value = None
 
-        self.browser_manager.get_page_pool.return_value = mock_page_pool
+        self.browser_manager.get_context_pool.return_value = mock_context_pool
 
         # Mock one successful and one failing processing
         with patch.object(
-            self.processor, "_process_single_url_with_page"
+            self.processor, "_process_single_url_with_context"
         ) as mock_process:
 
             def side_effect(*args, **kwargs):
@@ -222,17 +220,16 @@ class TestParallelProcessor:
             concurrent_count -= 1
             return {"content": "test"}
 
-        # Mock page pool
-        mock_context = AsyncMock()
-        mock_pages = [AsyncMock()]
-        mock_page_pool = AsyncMock()
-        mock_page_pool.__aenter__.return_value = (mock_context, mock_pages)
-        mock_page_pool.__aexit__.return_value = None
+        # Mock context pool
+        mock_contexts = [AsyncMock()]
+        mock_context_pool = AsyncMock()
+        mock_context_pool.__aenter__.return_value = mock_contexts
+        mock_context_pool.__aexit__.return_value = None
 
-        processor.browser_manager.get_page_pool.return_value = mock_page_pool
+        processor.browser_manager.get_context_pool.return_value = mock_context_pool
 
         with patch.object(
-            processor, "_process_single_url_with_page", side_effect=mock_process
+            processor, "_process_single_url_with_context", side_effect=mock_process
         ):
             urls = ["http://example1.com", "http://example2.com", "http://example3.com"]
             await processor.process_urls_parallel(urls, self.playwright_config)

@@ -56,18 +56,15 @@ class ParallelProcessor:
                 urls, playwright_config, **extract_kwargs
             )
 
-        # Use parallel processing with page pool
-        async with self.browser_manager.get_page_pool(self.max_workers) as (
-            context,
-            pages,
-        ):
+        # Use parallel processing with context pool
+        async with self.browser_manager.get_context_pool(self.max_workers) as contexts:
             # Create tasks for parallel processing
             tasks = []
             for i, url in enumerate(urls):
-                page_index = i % len(pages)
-                page = pages[page_index]
-                task = self._process_single_url_with_page(
-                    url, page, playwright_config, **extract_kwargs
+                context_index = i % len(contexts)
+                context = contexts[context_index]
+                task = self._process_single_url_with_context(
+                    url, context, playwright_config, **extract_kwargs
                 )
                 tasks.append(task)
 
@@ -84,6 +81,54 @@ class ParallelProcessor:
 
             return processed_results
 
+    async def _process_single_url_with_context(
+        self,
+        url: str,
+        context,
+        playwright_config: PlaywrightConfig,
+        **extract_kwargs,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Process a single URL using the provided browser context.
+
+        Args:
+            url: URL to process
+            context: Browser context to use
+            playwright_config: Playwright configuration
+            **extract_kwargs: Additional extraction arguments
+
+        Returns:
+            Extraction result or None if failed
+        """
+        async with self.semaphore:
+            try:
+                # Create a page from the context
+                page = await self.browser_manager.create_page_from_context(context)
+
+                try:
+                    # Create a separate extractor for this context
+                    extractor = StrongbirdExtractor(
+                        browser_manager=self.browser_manager,
+                        use_playwright=True,
+                        favor_precision=extract_kwargs.get("favor_precision", False),
+                    )
+
+                    # Use a custom extraction method that uses the provided page
+                    result = await self._extract_with_page(
+                        extractor, page, url, playwright_config, **extract_kwargs
+                    )
+
+                    return result
+
+                finally:
+                    # Always close the page when done
+                    await page.close()
+
+            except Exception as e:
+                # Log error but don't fail the entire batch
+                print(f"Error processing {url}: {e}")
+                return None
+
     async def _process_single_url_with_page(
         self,
         url: str,
@@ -93,6 +138,8 @@ class ParallelProcessor:
     ) -> Optional[Dict[str, Any]]:
         """
         Process a single URL using the provided page instance.
+
+        This method is kept for backward compatibility and testing.
 
         Args:
             url: URL to process
