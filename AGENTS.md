@@ -27,7 +27,7 @@ This document captures the design intentions and architectural decisions of Stro
 
 ### Browser Management (`browser.py`)
 - **Purpose**: Unified interface for Playwright browser automation
-- **Key features**: 
+- **Key features**:
   - Context manager pattern for resource cleanup
   - Configurable browsers (Chromium, Firefox, WebKit)
   - Viewport and user agent customization
@@ -35,7 +35,7 @@ This document captures the design intentions and architectural decisions of Stro
 
 ### Math Processing (`math.py`)
 - **Purpose**: Convert mathematical equations from various rendering engines to TeX
-- **Design philosophy**: 
+- **Design philosophy**:
   - **Unified JavaScript approach**: Single script handles multiple math formats
   - **Content integration**: Ensure converted math is recognized by content extractors
   - **Fallback conversion**: MathML-to-TeX converter for unsupported formats
@@ -54,7 +54,7 @@ This document captures the design intentions and architectural decisions of Stro
 ### Math Processing Strategy
 **Problem**: Different websites use different math rendering engines (KaTeX, MathJax, MathML, Wikipedia's custom system).
 
-**Solution**: 
+**Solution**:
 1. **Unified JavaScript processor** that runs in the browser context
 2. **Multi-format detection**: Automatically detect and process various math formats
 3. **Content preservation**: Replace math elements with text nodes or proper HTML elements that Trafilatura recognizes as content
@@ -65,7 +65,7 @@ This document captures the design intentions and architectural decisions of Stro
 
 **Root cause**: Trafilatura was filtering out the converted `.math-converted` elements as non-content.
 
-**Solution**: 
+**Solution**:
 - For inline math: Convert to text nodes within existing paragraphs
 - For display math: Use `<p>` tags instead of generic `<div>` elements
 - Add semantic attributes (`data-math`, `role="math"`) for better content recognition

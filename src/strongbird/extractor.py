@@ -1,8 +1,8 @@
 """Content extraction module combining Playwright and Trafilatura."""
 
 import asyncio
-from typing import Optional, Dict, Any, Union
 from pathlib import Path
+from typing import Any, Dict, Optional
 
 import trafilatura
 from trafilatura import extract
@@ -13,7 +13,7 @@ from .browser import BrowserManager
 
 class StrongbirdExtractor:
     """Extract content from web pages using Playwright and Trafilatura."""
-    
+
     def __init__(
         self,
         browser_manager: Optional[BrowserManager] = None,
@@ -22,7 +22,7 @@ class StrongbirdExtractor:
     ):
         """
         Initialize extractor.
-        
+
         Args:
             browser_manager: BrowserManager instance
             use_playwright: Use Playwright for rendering
@@ -31,7 +31,7 @@ class StrongbirdExtractor:
         self.browser_manager = browser_manager or BrowserManager()
         self.use_playwright = use_playwright
         self.favor_precision = favor_precision
-        
+
     async def extract_async(
         self,
         url: str,
@@ -52,7 +52,7 @@ class StrongbirdExtractor:
     ) -> Optional[Dict[str, Any]]:
         """
         Extract content from URL asynchronously.
-        
+
         Args:
             url: URL to extract from
             output_format: Output format (markdown, text, xml, json, csv)
@@ -69,7 +69,7 @@ class StrongbirdExtractor:
             scroll_to_bottom: Scroll to bottom of page (Playwright)
             wait_time: Additional wait time in ms (Playwright)
             execute_script: JavaScript to execute (Playwright)
-            
+
         Returns:
             Dictionary containing extracted content and metadata
         """
@@ -89,17 +89,17 @@ class StrongbirdExtractor:
             if not downloaded:
                 return None
             html_content = downloaded
-        
+
         # Configure extraction
         config = use_config()
         if self.favor_precision:
-            config.set('DEFAULT', 'EXTRACTION_FAVOR', 'precision')
+            config.set("DEFAULT", "EXTRACTION_FAVOR", "precision")
         else:
-            config.set('DEFAULT', 'EXTRACTION_FAVOR', 'recall')
-        
+            config.set("DEFAULT", "EXTRACTION_FAVOR", "recall")
+
         # Map output format
         trafilatura_format = self._map_format(output_format)
-        
+
         # Extract content
         extracted = extract(
             html_content,
@@ -117,48 +117,50 @@ class StrongbirdExtractor:
             with_metadata=with_metadata,
             config=config,
         )
-        
+
         if not extracted:
             return None
-        
+
         result = {
-            'content': extracted,
-            'format': output_format,
-            'url': url,
+            "content": extracted,
+            "format": output_format,
+            "url": url,
         }
-        
+
         # Extract metadata separately if needed
-        if with_metadata and output_format in ['markdown', 'text']:
+        if with_metadata and output_format in ["markdown", "text"]:
             metadata = trafilatura.metadata.extract_metadata(html_content)
             if metadata:
-                result['metadata'] = {
-                    'title': metadata.title,
-                    'author': metadata.author,
-                    'date': metadata.date,
-                    'description': metadata.description,
-                    'sitename': metadata.sitename,
-                    'categories': metadata.categories,
-                    'tags': metadata.tags,
-                    'language': metadata.language,
+                result["metadata"] = {
+                    "title": metadata.title,
+                    "author": metadata.author,
+                    "date": metadata.date,
+                    "description": metadata.description,
+                    "sitename": metadata.sitename,
+                    "categories": metadata.categories,
+                    "tags": metadata.tags,
+                    "language": metadata.language,
                 }
                 # Remove None values
-                result['metadata'] = {k: v for k, v in result['metadata'].items() if v is not None}
-        
+                result["metadata"] = {
+                    k: v for k, v in result["metadata"].items() if v is not None
+                }
+
         return result
-    
+
     def extract(self, url: str, **kwargs) -> Optional[Dict[str, Any]]:
         """
         Synchronous wrapper for extract_async.
-        
+
         Args:
             url: URL to extract from
             **kwargs: Additional arguments for extract_async
-            
+
         Returns:
             Dictionary containing extracted content and metadata
         """
         return asyncio.run(self.extract_async(url, **kwargs))
-    
+
     async def extract_from_file_async(
         self,
         file_path: str,
@@ -175,7 +177,7 @@ class StrongbirdExtractor:
     ) -> Optional[Dict[str, Any]]:
         """
         Extract content from local HTML file.
-        
+
         Args:
             file_path: Path to HTML file
             output_format: Output format
@@ -188,27 +190,27 @@ class StrongbirdExtractor:
             deduplicate: Remove duplicates
             target_lang: Target language
             with_metadata: Include metadata
-            
+
         Returns:
             Dictionary containing extracted content and metadata
         """
         path = Path(file_path)
         if not path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
-        
-        with open(path, 'r', encoding='utf-8') as f:
+
+        with open(path, "r", encoding="utf-8") as f:
             html_content = f.read()
-        
+
         # Configure extraction
         config = use_config()
         if self.favor_precision:
-            config.set('DEFAULT', 'EXTRACTION_FAVOR', 'precision')
+            config.set("DEFAULT", "EXTRACTION_FAVOR", "precision")
         else:
-            config.set('DEFAULT', 'EXTRACTION_FAVOR', 'recall')
-        
+            config.set("DEFAULT", "EXTRACTION_FAVOR", "recall")
+
         # Map output format
         trafilatura_format = self._map_format(output_format)
-        
+
         # Extract content
         extracted = extract(
             html_content,
@@ -225,47 +227,49 @@ class StrongbirdExtractor:
             with_metadata=with_metadata,
             config=config,
         )
-        
+
         if not extracted:
             return None
-        
+
         result = {
-            'content': extracted,
-            'format': output_format,
-            'file': str(path.absolute()),
+            "content": extracted,
+            "format": output_format,
+            "file": str(path.absolute()),
         }
-        
+
         # Extract metadata if needed
-        if with_metadata and output_format in ['markdown', 'text']:
+        if with_metadata and output_format in ["markdown", "text"]:
             metadata = trafilatura.metadata.extract_metadata(html_content)
             if metadata:
-                result['metadata'] = {
-                    'title': metadata.title,
-                    'author': metadata.author,
-                    'date': metadata.date,
-                    'description': metadata.description,
-                    'sitename': metadata.sitename,
-                    'categories': metadata.categories,
-                    'tags': metadata.tags,
-                    'language': metadata.language,
+                result["metadata"] = {
+                    "title": metadata.title,
+                    "author": metadata.author,
+                    "date": metadata.date,
+                    "description": metadata.description,
+                    "sitename": metadata.sitename,
+                    "categories": metadata.categories,
+                    "tags": metadata.tags,
+                    "language": metadata.language,
                 }
-                result['metadata'] = {k: v for k, v in result['metadata'].items() if v is not None}
-        
+                result["metadata"] = {
+                    k: v for k, v in result["metadata"].items() if v is not None
+                }
+
         return result
-    
+
     def extract_from_file(self, file_path: str, **kwargs) -> Optional[Dict[str, Any]]:
         """Synchronous wrapper for extract_from_file_async."""
         return asyncio.run(self.extract_from_file_async(file_path, **kwargs))
-    
+
     def _map_format(self, format_name: str) -> str:
         """Map format name to Trafilatura format."""
         format_map = {
-            'markdown': 'markdown',
-            'md': 'markdown',
-            'text': 'txt',
-            'txt': 'txt',
-            'xml': 'xml',
-            'json': 'json',
-            'csv': 'csv',
+            "markdown": "markdown",
+            "md": "markdown",
+            "text": "txt",
+            "txt": "txt",
+            "xml": "xml",
+            "json": "json",
+            "csv": "csv",
         }
-        return format_map.get(format_name.lower(), 'markdown')
+        return format_map.get(format_name.lower(), "markdown")

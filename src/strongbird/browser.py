@@ -1,15 +1,15 @@
 """Browser management module for Playwright."""
 
 import asyncio
-from typing import Optional, Dict, Any
 from contextlib import asynccontextmanager
+from typing import Optional
 
-from playwright.async_api import async_playwright, Browser, Page, BrowserContext
+from playwright.async_api import Browser, Page, async_playwright
 
 
 class BrowserManager:
     """Manages Playwright browser instances and pages."""
-    
+
     def __init__(
         self,
         headless: bool = True,
@@ -25,7 +25,7 @@ class BrowserManager:
     ):
         """
         Initialize browser manager.
-        
+
         Args:
             headless: Run browser in headless mode
             browser_type: Browser to use (chromium, firefox, webkit)
@@ -48,7 +48,7 @@ class BrowserManager:
         self.javascript = javascript
         self.images = images
         self.cookies = cookies or []
-        
+
     def _default_user_agent(self) -> str:
         """Return default user agent string."""
         return (
@@ -56,17 +56,17 @@ class BrowserManager:
             "AppleWebKit/537.36 (KHTML, like Gecko) "
             "Chrome/120.0.0.0 Safari/537.36"
         )
-    
+
     @asynccontextmanager
     async def get_browser(self):
         """Context manager for browser instance."""
         async with async_playwright() as p:
             browser_launcher = getattr(p, self.browser_type)
-            
+
             launch_options = {
                 "headless": self.headless,
             }
-            
+
             # Add browser-specific options
             if self.browser_type == "chromium":
                 launch_options["args"] = [
@@ -75,14 +75,14 @@ class BrowserManager:
                     "--no-sandbox",
                     "--disable-setuid-sandbox",
                 ]
-            
+
             browser = await browser_launcher.launch(**launch_options)
-            
+
             try:
                 yield browser
             finally:
                 await browser.close()
-    
+
     @asynccontextmanager
     async def get_page(self, browser: Browser):
         """Context manager for page instance."""
@@ -94,33 +94,37 @@ class BrowserManager:
             "user_agent": self.user_agent,
             "java_script_enabled": self.javascript,
         }
-        
+
         # Disable images if requested
         if not self.images:
             context_options["bypass_csp"] = True
-            
+
         context = await browser.new_context(**context_options)
-        
+
         # Set cookies if provided
         if self.cookies:
             await context.add_cookies(self.cookies)
-        
+
         page = await context.new_page()
         page.set_default_timeout(self.timeout)
-        
+
         # Block image requests if images are disabled
         if not self.images:
-            await page.route("**/*", lambda route: 
-                route.abort() if route.request.resource_type == "image" 
-                else route.continue_()
+            await page.route(
+                "**/*",
+                lambda route: (
+                    route.abort()
+                    if route.request.resource_type == "image"
+                    else route.continue_()
+                ),
             )
-        
+
         try:
             yield page
         finally:
             await page.close()
             await context.close()
-    
+
     async def fetch_html(
         self,
         url: str,
@@ -132,7 +136,7 @@ class BrowserManager:
     ) -> str:
         """
         Fetch HTML content from URL using Playwright.
-        
+
         Args:
             url: URL to fetch
             wait_for_selector: CSS selector to wait for
@@ -140,7 +144,7 @@ class BrowserManager:
             wait_time: Additional wait time in milliseconds
             execute_script: JavaScript to execute before getting HTML
             process_math: Process mathematical equations to TeX format
-            
+
         Returns:
             HTML content as string
         """
@@ -148,57 +152,60 @@ class BrowserManager:
             async with self.get_page(browser) as page:
                 # Navigate to URL
                 await page.goto(url, wait_until=self.wait_until)
-                
+
                 # Wait for specific selector if provided
                 if wait_for_selector:
-                    await page.wait_for_selector(wait_for_selector, timeout=self.timeout)
-                
+                    await page.wait_for_selector(
+                        wait_for_selector, timeout=self.timeout
+                    )
+
                 # Execute custom JavaScript if provided
                 if execute_script:
                     await page.evaluate(execute_script)
-                
+
                 # Scroll to bottom if requested
                 if scroll_to_bottom:
                     await self._scroll_to_bottom(page)
-                
+
                 # Additional wait time
                 if wait_time > 0:
                     await asyncio.sleep(wait_time / 1000)
-                
+
                 # Process math equations if requested
                 if process_math:
                     from .math import MathProcessor
+
                     math_processor = MathProcessor()
                     await math_processor.normalize_math_equations(page)
-                
+
                 # Get page content
                 html = await page.content()
-                
+
                 return html
-    
+
     async def _scroll_to_bottom(self, page: Page, step: int = 500):
         """
         Scroll page to bottom to trigger lazy loading.
-        
+
         Args:
             page: Playwright page instance
             step: Scroll step in pixels
         """
         previous_height = 0
         current_height = await page.evaluate("document.body.scrollHeight")
-        
+
         while current_height != previous_height:
             previous_height = current_height
-            
+
             # Scroll down by steps
             for y in range(0, current_height, step):
                 await page.evaluate(f"window.scrollTo(0, {y})")
                 await asyncio.sleep(0.1)
-            
+
             # Wait for new content to load
             await asyncio.sleep(0.5)
             current_height = await page.evaluate("document.body.scrollHeight")
-    
+
     async def take_screenshot(
         self,
         url: str,
@@ -208,7 +215,7 @@ class BrowserManager:
     ):
         """
         Take screenshot of webpage.
-        
+
         Args:
             url: URL to screenshot
             path: Path to save screenshot
@@ -218,8 +225,10 @@ class BrowserManager:
         async with self.get_browser() as browser:
             async with self.get_page(browser) as page:
                 await page.goto(url, wait_until=self.wait_until)
-                
+
                 if wait_for_selector:
-                    await page.wait_for_selector(wait_for_selector, timeout=self.timeout)
-                
+                    await page.wait_for_selector(
+                        wait_for_selector, timeout=self.timeout
+                    )
+
                 await page.screenshot(path=path, full_page=full_page)

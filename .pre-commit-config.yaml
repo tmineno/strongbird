@@ -30,3 +30,12 @@ repos:
     hooks:
       - id: markdownlint
         args: [--fix, --disable, MD013]
+
+  - repo: https://github.com/eslint/eslint
+    rev: v9.17.0
+    hooks:
+      - id: eslint
+        files: \.(js|jsx|ts|tsx)$
+        types: [file]
+        additional_dependencies:
+          - eslint@^9.17.0
