@@ -47,7 +47,7 @@ uv run strongbird https://example.com --no-playwright
 uv run strongbird "https://example.com/page-[1-10].html" --output-dir ./pages
 
 # Extract with zero-padded numbers
-uv run strongbird "https://api.example.com/items/[001-100].json" -j 4
+uv run strongbird "https://httpbin.org/status/[200-204]" -j 4
 
 # Extract from multiple domains/endpoints
 uv run strongbird "https://{docs,api,blog}.example.com/content.html" --output-dir ./sites
@@ -56,7 +56,7 @@ uv run strongbird "https://{docs,api,blog}.example.com/content.html" --output-di
 uv run strongbird "https://example.com/[literal-brackets].html" --ignore-glob
 
 # Parallel processing (4 concurrent workers)
-uv run strongbird "https://news.com/articles/[1-50].html" -j 4 --output-dir ./articles
+uv run strongbird "https://httpbin.org/status/[200-250]" -j 4 --output-dir ./articles
 ```
 
 ### Output Formats
@@ -101,16 +101,16 @@ uv run strongbird https://example.com --crawl-depth 1 --same-domain-only --outpu
 
 ```bash
 # Wait for specific element
-uv run strongbird https://spa-app.com --wait-for ".content-loaded"
+uv run strongbird https://httpbin.org/html --wait-for "body"
 
 # Scroll to trigger lazy loading
-uv run strongbird https://infinite-scroll.com --scroll
+uv run strongbird https://httpbin.org/html --scroll
 
 # Additional wait time
-uv run strongbird https://slow-app.com --wait-time 5000
+uv run strongbird https://httpbin.org/delay/2 --wait-time 5000
 
 # Execute custom JavaScript
-uv run strongbird https://app.com --execute-script "document.querySelector('.modal').remove()"
+uv run strongbird https://httpbin.org/html --execute-script "document.querySelector('h1').style.color='red'"
 ```
 
 ### Performance Optimization
@@ -148,7 +148,7 @@ uv run strongbird https://example.com --include-links --include-comments
 uv run strongbird https://example.com --include-formatting
 
 # Process mathematical equations (convert KaTeX/MathJax/MathML to TeX)
-uv run strongbird https://math-heavy-site.com --process-math
+uv run strongbird https://en.wikipedia.org/wiki/Quadratic_formula --process-math
 ```
 
 ## Options
@@ -215,8 +215,8 @@ uv run strongbird https://math-heavy-site.com --process-math
 ### Extract article from news site
 
 ```bash
-uv run strongbird https://news.site/article \
-  --wait-for "article" \
+uv run strongbird https://httpbin.org/html \
+  --wait-for "body" \
   --format markdown \
   -o article.md
 ```
@@ -224,8 +224,8 @@ uv run strongbird https://news.site/article \
 ### Extract from JavaScript SPA
 
 ```bash
-uv run strongbird https://spa-app.com \
-  --wait-for "[data-loaded='true']" \
+uv run strongbird https://httpbin.org/html \
+  --wait-for "body" \
   --scroll \
   --wait-time 3000 \
   -f json
@@ -234,7 +234,7 @@ uv run strongbird https://spa-app.com \
 ### Fast extraction without rendering
 
 ```bash
-uv run strongbird https://simple-site.com \
+uv run strongbird https://httpbin.org/html \
   --no-playwright \
   --format text \
   --no-metadata
@@ -253,7 +253,7 @@ uv run strongbird https://example.com \
 
 ```bash
 # Extract multiple pages with numeric range
-uv run strongbird "https://docs.site.com/chapter-[1-25].html" \
+uv run strongbird "https://httpbin.org/status/[200-225]" \
   --output-dir ./chapters \
   -j 3
 
@@ -263,7 +263,7 @@ uv run strongbird "https://{blog,docs,api}.example.com/content" \
   --format json
 
 # Extract with zero-padded numbers
-uv run strongbird "https://archive.org/items/[001-100]" \
+uv run strongbird "https://httpbin.org/status/[200-250]" \
   --output-dir ./archive \
   -j 5 \
   --wait-time 2000
@@ -314,13 +314,13 @@ uv run strongbird "https://en.wikipedia.org/wiki/Quadratic_formula" --process-ma
 
 ```bash
 # Extract from academic paper with equations
-uv run strongbird https://arxiv.org/abs/2301.00001 --process-math -f markdown
+uv run strongbird https://en.wikipedia.org/wiki/Einstein_field_equations --process-math -f markdown
 
 # Process site with KaTeX rendering
-uv run strongbird https://khan-academy.org/article --process-math
+uv run strongbird https://en.wikipedia.org/wiki/Fourier_transform --process-math
 
 # Extract with both formatting and math
-uv run strongbird https://math-site.com --include-formatting --process-math
+uv run strongbird https://en.wikipedia.org/wiki/Calculus --include-formatting --process-math
 ```
 
 ### Output Format
@@ -344,19 +344,19 @@ Strongbird supports curl-style URL globbing patterns for bulk extraction. This f
 uv run strongbird "https://example.com/page-[1-10].html"
 
 # Zero-padded numbers
-uv run strongbird "https://api.com/items/[001-100].json"
+uv run strongbird "https://httpbin.org/status/[200-300]"
 
 # Step intervals
-uv run strongbird "https://site.com/data-[1-100:5].csv"  # 1, 6, 11, 16, ...
+uv run strongbird "https://httpbin.org/status/[200-300:10]"  # 200, 210, 220, ...
 ```
 
 #### Alphabetic Ranges
 ```bash
 # Lowercase letters
-uv run strongbird "https://docs.com/section-[a-z].html"
+uv run strongbird "https://httpbin.org/anything/[a-z]"
 
 # Uppercase letters
-uv run strongbird "https://api.com/category-[A-Z].json"
+uv run strongbird "https://httpbin.org/anything/[A-Z]"
 ```
 
 #### Lists/Alternatives
@@ -365,14 +365,14 @@ uv run strongbird "https://api.com/category-[A-Z].json"
 uv run strongbird "https://{docs,api,blog}.example.com/content.html"
 
 # Mixed patterns
-uv run strongbird "https://{dev,staging,prod}.site.com/data-[1-5].json"
+uv run strongbird "https://httpbin.org/{get,post,put}/[1-5]"
 ```
 
 #### Complex Combinations
 ```bash
 # Multiple patterns in single URL
-uv run strongbird "https://{api,cdn}.site.com/v[1-3]/items/[a-c].json"
-# Expands to: api.site.com/v1/items/a.json, api.site.com/v1/items/b.json, etc.
+uv run strongbird "https://httpbin.org/{get,post}/v[1-3]/items/[a-c]"
+# Expands to: httpbin.org/get/v1/items/a, httpbin.org/get/v1/items/b, etc.
 ```
 
 ### URL Expansion Options
@@ -389,10 +389,10 @@ Strongbird can process multiple URLs concurrently, significantly improving perfo
 
 ```bash
 # Process 4 URLs concurrently
-uv run strongbird "https://site.com/articles/[1-20].html" -j 4 --output-dir ./articles
+uv run strongbird "https://httpbin.org/status/[200-220]" -j 4 --output-dir ./articles
 
 # Combine with crawling for maximum efficiency
-uv run strongbird "https://docs.site.com/[1-10].html" --crawl-depth 1 -j 3
+uv run strongbird "https://httpbin.org/links/[1-10]" --crawl-depth 1 -j 3
 
 # Process different sites in parallel
 uv run strongbird "https://{docs,api,blog}.example.com" -j 3 --output-dir ./sites
