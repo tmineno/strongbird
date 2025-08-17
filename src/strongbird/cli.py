@@ -84,6 +84,11 @@ from .config import ConfigBuilder
 @click.option("--include-links", is_flag=True, help="Include links in extraction")
 @click.option("--include-images", is_flag=True, help="Include images in extraction")
 @click.option(
+    "--extract-images",
+    is_flag=True,
+    help="Download images to local img folder and update URLs in content",
+)
+@click.option(
     "--include-formatting",
     is_flag=True,
     help="Include formatting (bold, italic, etc.) in extraction",

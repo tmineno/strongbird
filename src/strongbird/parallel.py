@@ -207,6 +207,7 @@ class ParallelProcessor:
                         "include_tables",
                         "include_links",
                         "include_images",
+                        "extract_images",
                         "include_formatting",
                         "process_math",
                         "deduplicate",
@@ -216,6 +217,7 @@ class ParallelProcessor:
                         "scroll_to_bottom",
                         "wait_time",
                         "execute_script",
+                        "img_folder",
                     ]
                 }
 

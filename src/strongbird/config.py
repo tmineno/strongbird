@@ -48,6 +48,7 @@ class ExtractionConfig:
     include_tables: bool = True
     include_links: bool = False
     include_images: bool = False
+    extract_images: bool = False
     include_formatting: bool = False
     process_math: bool = False
     deduplicate: bool = True
@@ -58,12 +59,17 @@ class ExtractionConfig:
     @classmethod
     def from_cli_args(cls, **kwargs) -> "ExtractionConfig":
         """Create ExtractionConfig from CLI arguments."""
+        extract_images = kwargs.get("extract_images", False)
+        # If extract_images is True, automatically enable include_images
+        include_images = kwargs.get("include_images", False) or extract_images
+
         return cls(
             output_format=kwargs.get("format", "markdown"),
             include_comments=kwargs.get("include_comments", False),
             include_tables=not kwargs.get("no_tables", False),
             include_links=kwargs.get("include_links", False),
-            include_images=kwargs.get("include_images", False),
+            include_images=include_images,
+            extract_images=extract_images,
             include_formatting=kwargs.get("include_formatting", False),
             process_math=kwargs.get("process_math", False),
             deduplicate=not kwargs.get("no_deduplicate", False),
