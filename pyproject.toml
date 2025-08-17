@@ -3,6 +3,7 @@ name = "strongbird"
 version = "0.1.0"
 description = "Web page extractor using Playwright for rendering and Trafilatura for content extraction"
 readme = "README.md"
+license = { text = "MIT" }
 authors = [
     { name = "Taiki Mineno", email = "taiki.mineno@gmail.com" }
 ]
