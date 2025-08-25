@@ -2,6 +2,62 @@
 
 A powerful web page extractor that combines Playwright for JavaScript rendering and Trafilatura for content extraction. Extract clean, readable content from any webpage, including JavaScript-heavy sites.
 
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Basic Extraction](#basic-extraction)
+  - [Batch File Processing](#batch-file-processing)
+  - [URL Expansion & Parallel Processing](#url-expansion--parallel-processing)
+  - [Output Formats](#output-formats)
+  - [Crawling Multiple Pages](#crawling-multiple-pages)
+  - [JavaScript-Heavy Sites](#javascript-heavy-sites)
+  - [Performance Optimization](#performance-optimization)
+  - [Advanced Options](#advanced-options)
+  - [Image Extraction](#image-extraction)
+- [Options](#options)
+  - [📄 Output Options](#-output-options)
+  - [📋 Batch Processing Options](#-batch-processing-options)
+  - [🕷️ Crawling Options](#️-crawling-options)
+  - [🌐 Browser & Rendering Options](#-browser--rendering-options)
+  - [⚡ JavaScript & Loading Options](#-javascript--loading-options)
+  - [📋 Content Extraction Options](#-content-extraction-options)
+  - [🚀 URL Expansion & Parallel Processing Options](#-url-expansion--parallel-processing-options)
+  - [🔧 Other Options](#-other-options)
+- [Examples](#examples)
+  - [Extract article from news site](#extract-article-from-news-site)
+  - [Extract from JavaScript SPA](#extract-from-javascript-spa)
+  - [Fast extraction without rendering](#fast-extraction-without-rendering)
+  - [Extract with screenshot](#extract-with-screenshot)
+  - [Extract with images](#extract-with-images)
+  - [Batch file processing](#batch-file-processing-1)
+  - [Bulk extraction with URL expansion](#bulk-extraction-with-url-expansion)
+- [Architecture](#architecture)
+- [Mathematical Equation Processing](#mathematical-equation-processing)
+  - [Supported Math Formats](#supported-math-formats)
+  - [Math Processing Examples](#math-processing-examples)
+  - [Wikipedia Math Support](#wikipedia-math-support)
+  - [Output Format](#output-format)
+- [Image Extraction](#image-extraction-1)
+  - [How It Works](#how-it-works)
+  - [Folder Structure](#folder-structure)
+  - [Image Extraction Examples](#image-extraction-examples)
+  - [Image Processing Features](#image-processing-features)
+  - [Output Format](#output-format-1)
+- [URL Expansion with Curl Globbing](#url-expansion-with-curl-globbing)
+  - [Supported Patterns](#supported-patterns)
+  - [URL Expansion Options](#url-expansion-options)
+- [Batch File Processing](#batch-file-processing-2)
+  - [Batch File Format](#batch-file-format)
+  - [Batch Processing Features](#batch-processing-features)
+  - [Batch Processing Examples](#batch-processing-examples)
+- [Parallel Processing](#parallel-processing)
+  - [Parallel Processing Examples](#parallel-processing-examples)
+- [Testing](#testing)
+  - [Running Tests](#running-tests)
+- [Dependencies](#dependencies)
+
 ## Features
 
 - **JavaScript Rendering**: Uses Playwright to render JavaScript-heavy pages before extraction
@@ -578,32 +634,6 @@ uv run strongbird "https://httpbin.org/links/[1-10]" --crawl-depth 1 -j 3
 
 # Process different sites in parallel
 uv run strongbird "https://{docs,api,blog}.example.com" -j 3 --output ./sites
-```
-
-## Testing
-
-Strongbird includes a comprehensive test suite to ensure reliable math extraction and content processing.
-
-### Running Tests
-
-```bash
-# Run all tests with pytest
-uv run pytest test/
-
-# Run specific test categories
-uv run pytest test/ -m "math"          # Math extraction tests
-uv run pytest test/ -m "cli"           # CLI functionality tests
-uv run pytest test/ -m "batch"         # Batch processing tests
-uv run pytest test/ -m "integration"   # Integration tests (requires network)
-
-# Run tests excluding network-dependent ones
-uv run pytest test/ -m "not integration"
-
-# Run with verbose output
-uv run pytest test/ -v
-
-# Test individual fixtures
-uv run strongbird "file://$(pwd)/test/fixtures/comprehensive-math-test.html" --process-math
 ```
 
 ## Dependencies
